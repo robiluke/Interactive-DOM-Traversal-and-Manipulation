@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interactive DOM Traversal and Manipulation</title>
+    <style>
+        /* Profile Header Styles */
+        header {
+            background-color: #f0f0f0;
+            padding: 15px 25px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border-bottom: 3px solid #007acc;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            color: #007acc;
+            font-weight: 700;
+        }
+        header p {
+            margin: 3px 0;
+            font-size: 15px;
+            color: #333;
+        }
+
+        /* Hierarchy Node Styles */
+        .grandparent {
+            background-color: #007acc;
+            color: white;
+            padding: 14px;
+            margin: 15px auto;
+            width: 320px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 122, 204, 0.4);
+            transition: background-color 0.3s ease;
+        }
+        .grandparent:hover {
+            background-color: #005fa3;
+        }
+        .parent {
+            background-color: #ff7f50;
+            color: white;
+            padding: 12px;
+            margin: 12px auto;
+            width: 270px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 3px 7px rgba(255, 127, 80, 0.5);
+            transition: background-color 0.3s ease;
+        }
+        .parent:hover {
+            background-color: #e76b3c;
+        }
+        .child {
+            background-color: #ffd580;
+            color: #333;
+            padding: 10px;
+            margin: 8px auto;
+            width: 220px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(255, 213, 128, 0.6);
+            transition: background-color 0.3s ease;
+        }
+        .child:hover {
+            background-color: #ffcc66;
+        }
+
+        /* Highlighted node */
+        .highlight {
+            outline: 4px solid #ffdd57;
+            background-color: #ffeaa7 !important;
+            box-shadow: 0 0 15px 3px #ffdd57;
+        }
+
+        /* Container for children */
+        .children-container {
+            margin-left: 25px;
+        }
+
+        /* Buttons container */
+        #controls {
+            margin: 25px auto;
+            width: 350px;
+            text-align: center;
+        }
+        #controls button {
+            margin: 8px 6px;
+            padding: 10px 16px;
+            font-size: 16px;
+            border: none;
+            border-radius: 7px;
+            background-color: #007acc;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0, 122, 204, 0.5);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #controls button:hover {
+            background-color: #005fa3;
+            box-shadow: 0 5px 10px rgba(0, 95, 163, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <header style="background-color: #c9e4ff; color: white; padding: 20px; border-radius: 8px; font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto 30px auto; box-shadow: 0 0 10px rgba(0,0,0,0.3);">
+        <h1 style="border-bottom: 1px solid white; padding-bottom: 8px; margin-bottom: 15px;">Student Profile</h1>
+        <p><strong>Complete Name:</strong> Robi Luke Buena Hernandez</p>
+        <p><strong>Sex:</strong> Male</p>
+        <p><strong>Address:</strong> La Purisima St. Goa Camarines Sur, Philippines</p>
+        <p><strong>Course, Year, and Section:</strong> Bachelor of Science in Information Technology, 2nd Year, Section 2A</p>
+        <p><strong>Name of School:</strong> Partido State University</p>
+        <p><strong>Semester and Academic Year:</strong> 2nd Semester, 2024-2025</p>
+        <p><strong>Course Code and Title:</strong> PF2 - Event Driven Programming</p>
+        <p><strong>Name of Subject Instructor:</strong> Prof. A. Abio</p>
+    </header>
+
+    <main>
+        <div id="grandparent" class="grandparent" tabindex="0">Grandparent
+            <div class="children-container" id="grandparent-children">
+                <div class="parent" tabindex="0">Parent 1
+                    <div class="children-container">
+                        <div class="child" tabindex="0">Child 1</div>
+                        <div class="child" tabindex="0">Child 2</div>
+                    </div>
+                </div>
+                <div class="parent" tabindex="0">Parent 2
+                    <div class="children-container">
+                        <div class="child" tabindex="0">Child 3</div>
+                        <div class="child" tabindex="0">Child 4</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button id="traverse-up" title="Traverse to Parent Node">Traverse Up</button>
+            <button id="traverse-down" title="Traverse to First Child Node">Traverse Down</button>
+            <button id="traverse-prev" title="Traverse to Previous Sibling">Traverse Previous Sibling</button>
+            <button id="traverse-next" title="Traverse to Next Sibling">Traverse Next Sibling</button>
+            <button id="add-child" title="Add Child Node">Add Child</button>
+            <button id="delete-current" title="Delete Selected Node">Delete Current</button>
+        </div>
+    </main>
+
+    <script>
+        // JavaScript for Interactive DOM Traversal and Manipulation
+
+        // Variables to keep track of the currently selected node
+        let selectedNode = null;
+
+        // Utility function to remove highlight from all nodes
+        function clearHighlight() {
+            const highlighted = document.querySelectorAll('.highlight');
+            highlighted.forEach(node => node.classList.remove('highlight'));
+        }
+
+        // Function to highlight a node
+        function highlightNode(node) {
+            if (!node) return;
+            clearHighlight();
+            node.classList.add('highlight');
+            selectedNode = node;
+            node.focus();
+        }
+
+        // Event handler for node selection by clicking
+        function onNodeClick(event) {
+            event.stopPropagation();
+            highlightNode(event.currentTarget);
+        }
+
+        // Add event listeners to all nodes initially
+        function addListenersToNodes() {
+            const nodes = document.querySelectorAll('.grandparent, .parent, .child');
+            nodes.forEach(node => {
+                node.addEventListener('click', onNodeClick);
+            });
+        }
+
+        // DOM Traversal functions
+        function traverseUp() {
+            if (!selectedNode) return;
+            const parent = selectedNode.parentElement.closest('.grandparent, .parent');
+            if (parent) {
+                highlightNode(parent);
+            } else {
+                alert('No parent node to traverse to.');
+            }
+        }
+
+        function traverseDown() {
+            if (!selectedNode) return;
+            // First child element of the same hierarchy level
+            let child = null;
+            if (selectedNode.classList.contains('grandparent')) {
+                child = selectedNode.querySelector('.parent');
+            } else if (selectedNode.classList.contains('parent')) {
+                child = selectedNode.querySelector('.child');
+            } else {
+                alert('No child nodes to traverse down to.');
+                return;
+            }
+            if (child) {
+                highlightNode(child);
+            } else {
+                alert('No child nodes to traverse down to.');
+            }
+        }
+
+        function traverseNextSibling() {
+            if (!selectedNode) return;
+            const next = selectedNode.nextElementSibling;
+            if (next && next.classList.contains(selectedNode.classList[0])) {
+                highlightNode(next);
+            } else {
+                alert('No next sibling of the same type.');
+            }
+        }
+
+        function traversePreviousSibling() {
+            if (!selectedNode) return;
+            const prev = selectedNode.previousElementSibling;
+            if (prev && prev.classList.contains(selectedNode.classList[0])) {
+                highlightNode(prev);
+            } else {
+                alert('No previous sibling of the same type.');
+            }
+        }
+
+        // Add Child function
+        function addChild() {
+            if (!selectedNode) {
+                alert('Please select a node first.');
+                return;
+            }
+            if (selectedNode.classList.contains('grandparent')) {
+                // Add a new parent node with two children
+                const newParent = document.createElement('div');
+                newParent.classList.add('parent');
+                newParent.setAttribute('tabindex', '0');
+                newParent.textContent = 'New Parent';
+
+                const childrenContainer = document.createElement('div');
+                childrenContainer.classList.add('children-container');
+
+                const child1 = document.createElement('div');
+                child1.classList.add('child');
+                child1.setAttribute('tabindex', '0');
+                child1.textContent = 'New Child 1';
+
+                const child2 = document.createElement('div');
+                child2.classList.add('child');
+                child2.setAttribute('tabindex', '0');
+                child2.textContent = 'New Child 2';
+
+                childrenContainer.appendChild(child1);
+                childrenContainer.appendChild(child2);
+                newParent.appendChild(childrenContainer);
+
+                // Append new parent to grandparent's children container
+                const grandChildrenContainer = selectedNode.querySelector('.children-container');
+                grandChildrenContainer.appendChild(newParent);
+
+                // Add event listeners to new nodes
+                newParent.addEventListener('click', onNodeClick);
+                child1.addEventListener('click', onNodeClick);
+                child2.addEventListener('click', onNodeClick);
+
+                highlightNode(newParent);
+            } else if (selectedNode.classList.contains('parent')) {
+                // Add a new child node
+                const newChild = document.createElement('div');
+                newChild.classList.add('child');
+                newChild.setAttribute('tabindex', '0');
+                newChild.textContent = 'New Child';
+
+                let childrenContainer = selectedNode.querySelector('.children-container');
+                if (!childrenContainer) {
+                    childrenContainer = document.createElement('div');
+                    childrenContainer.classList.add('children-container');
+                    selectedNode.appendChild(childrenContainer);
+                }
+                childrenContainer.appendChild(newChild);
+
+                newChild.addEventListener('click', onNodeClick);
+                highlightNode(newChild);
+            } else if (selectedNode.classList.contains('child')) {
+                alert('Cannot add child nodes to a child node.');
+            }
+        }
+
+        // Delete Current function
+        function deleteCurrent() {
+            if (!selectedNode) {
+                alert('Please select a node first.');
+                return;
+            }
+            if (selectedNode.classList.contains('grandparent')) {
+                alert('Cannot delete the grandparent node.');
+                return;
+            }
+            const parent = selectedNode.parentElement;
+            selectedNode.remove();
+            clearHighlight();
+            // After deletion, highlight the parent node if exists
+            if (parent && (parent.classList.contains('grandparent') || parent.classList.contains('parent'))) {
+                highlightNode(parent);
+            }
+        }
+
+        // Button event listeners
+        document.getElementById('traverse-up').addEventListener('click', traverseUp);
+        document.getElementById('traverse-down').addEventListener('click', traverseDown);
+        document.getElementById('traverse-prev').addEventListener('click', traversePreviousSibling);
+        document.getElementById('traverse-next').addEventListener('click', traverseNextSibling);
+        document.getElementById('add-child').addEventListener('click', addChild);
+        document.getElementById('delete-current').addEventListener('click', deleteCurrent);
+
+        // Initialize listeners and highlight the grandparent node on page load
+        addListenersToNodes();
+        highlightNode(document.getElementById('grandparent'));
+    </script>
+</body>
+</html>
